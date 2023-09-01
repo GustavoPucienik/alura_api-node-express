@@ -1,12 +1,31 @@
-import { alertarERedirecionar, atualizaTextoEditor } from "./documento.js";
+import { obterCookie } from "../utils/cookie.js";
+import { alertarERedirecionar, atualizaTextoEditor, tratarAutorizacaoSucesso, atualizarInterfaceUsuarios } from "./documento.js";
 
-const socket = io();
+const socket = io("/usuarios", {
+  auth: {
+    token: obterCookie("tokenJwt")
+  }
+});
 
-function selecionarDocumento(nome) {
-  socket.emit("selecionar_documento", nome, (texto) => {
+socket.on("autorizacao_sucesso", tratarAutorizacaoSucesso);
+
+socket.on("connect_error", (erro) => {
+  alert(erro);
+  window.location.href = "/login";
+});
+
+function selecionarDocumento(dadosEntrada) {
+  socket.emit("selecionar_documento", dadosEntrada, (texto) => {
     atualizaTextoEditor(texto);
   });
 }
+
+socket.on("usuario_ja_no_documento", () => {
+  alert("Documento já aberto em outra página.");
+  window.location.href = "/";
+});
+
+socket.on("usuarios_no_documento", atualizarInterfaceUsuarios)
 
 function emitirTextoEditor(dados) {
   socket.emit("texto_editor", dados);
